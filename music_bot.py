@@ -14,7 +14,7 @@ from telegram.ext import (
 )
 
 # ━━━━━━━━━━━━━━━━━━━━ CONFIGURATION ━━━━━━━━━━━━━━━━━━━━
-BOT_TOKEN = "8996186987:AAFeF_T7tdfcHXRN-_0OwlDBmxCuKsqgpiM" 
+BOT_TOKEN = "7243707544:AAGgPrkHFMBlPNgmyLvM_jKxH9AL_eDJ8Ik" 
 
 TRENDING_HINT_POOL = [
     "Karan Aujla - Tauba Tauba",
