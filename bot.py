@@ -15,22 +15,22 @@ from google.genai import types
 from gtts import gTTS
 import pypdf
 
-# Credentials & Admin Setup
+# Credentials
 TELEGRAM_BOT_TOKEN = "8831762730:AAFEv30ajJt9U81vmBx3BvKW5vS6STdaPOM"
 GEMINI_API_KEY = "AQ.Ab8RN6J89WI3ArFpLvh7CZXUCoj0sHRWRxSkaXhQ1X8rcfNOzA"
 ADMIN_ID = 8501811067
 OWNER_USERNAME = "@Tyagizbg"
 
-# AI Client Initialize
+# AI Client
 ai_client = genai.Client(api_key=GEMINI_API_KEY)
 
-# Branding System Instructions
+# System Prompt
 SYSTEM_PROMPT = (
-    "Aap ek advanced aur smart AI assistant hain jise Tyagi Ji ne develop kiya hai. "
-    "Kabhi bhi Google, Gemini ya kisi aur company ka naam mat lena. "
-    "Jab bhi koi pooche ki kisne banaya, creator kaun hai, owner kaun hai ya 'who made you', "
-    "to tumhara answer strictly exact yahi hona chahiye: 'TYAGI JI MADE THIS BOT'. "
-    "Baaki sabhi sawalon ke jawab accurate, smart, helpful aur polite bhasha me dein."
+    "Aap ek advanced aur smart AI assistant hain jise Tyagi Ji ne banaya hai. "
+    "KABHI BHI kisi bhi haalat me 'Google', 'Gemini', 'LLM' ya kisi company ka naam mat lena. "
+    "Agar koi pooche ki 'bot kisne banaya', 'creator kaun hai', 'developer kaun hai', 'who made you' ya 'kiska bot hai', "
+    "to aapka seedha jawab hona chahiye: 'Mujhe Tyagi Ji ne banaya hai'. "
+    "Baaki sabhi sawalon ke jawab clear, accurate, polite aur helpful bhasha me dein."
 )
 
 def get_main_menu():
@@ -41,11 +41,12 @@ def get_main_menu():
         ],
         [
             InlineKeyboardButton("📄 PDF Summarizer", callback_data="btn_pdf"),
-            InlineKeyboardButton("👑 Owner / Creator", callback_data="btn_owner"),
+            InlineKeyboardButton("👑 Owner Info", callback_data="btn_owner"),
         ],
     ]
     return InlineKeyboardMarkup(keyboard)
 
+# Dynamic User Name Greeting
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.first_name or "Dost"
     welcome_text = (
@@ -78,14 +79,12 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == "btn_help":
         text = (
-            "📖 **BOT HELP & FEATURES GUIDE** 🛠️\n\n"
-            "🔹 **🔍 Live Web Search:** Taaza khabrein aur real-time data search karta hai.\n"
-            "🔹 **🎙️ Voice Assistant:** Audio/voice note bhejein, bot bol kar jawab dega.\n"
-            "🔹 **📄 PDF Summarizer:** PDF bhejein, bot point-to-point summary bana dega.\n"
-            "🔹 **👑 Owner Card:** Creator Tyagi Ji ki contact info.\n"
-            "🔹 **💬 Chat:** Koi bhi sawaal type karke poochein.\n\n"
-            "━━━━━━━━━━━━━━━━━━━━━\n"
-            "⚡ Bot hamesha aapki madad ke liye taiyar hai!"
+            "📖 **HELP & FEATURES GUIDE** 🛠️\n\n"
+            "🔹 **🔍 Live Web Search:** Real-time internet search support karta hai.\n"
+            "🔹 **🎙️ Voice Assistant:** Audio bhejoge toh bol kar reply milega.\n"
+            "🔹 **📄 PDF Summarizer:** PDF upload karne par main points bata dega.\n"
+            "🔹 **👑 Owner Info:** Creator contact info.\n"
+            "🔹 **💬 Chat:** Normal sawal-jawab aur solutions."
         )
         back_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Main Menu", callback_data="btn_menu")]])
         await query.edit_message_text(text=text, reply_markup=back_markup, parse_mode="Markdown")
@@ -93,34 +92,33 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "btn_pdf":
         text = (
             "📄 **DOCUMENT / PDF SUMMARIZER** 📚\n\n"
-            "• Koi bhi PDF chat me document ke roop me bhejein.\n"
-            "• Bot use padh kar clean bullet points me summary dega.\n\n"
-            "👉 Abhi ek PDF send karke dekhein!"
+            "• Koi bhi PDF document ke roop me chat me bhejein.\n"
+            "• Bot use padh kar short points me summary de dega."
         )
         back_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Main Menu", callback_data="btn_menu")]])
         await query.edit_message_text(text=text, reply_markup=back_markup, parse_mode="Markdown")
 
     elif query.data == "btn_owner":
         text = (
-            "👑 **BOT CREATOR & ADMIN** 👑\n\n"
-            "🔥 **Created By:** Tyagi Ji\n"
-            "🏷️ **Tag:** `TYAGI JI MADE THIS BOT`\n"
-            f"📩 **Direct Contact:** {OWNER_USERNAME}\n\n"
-            "Kisi bhi madad ya custom bots ke liye directly contact karein."
+            "👑 **OWNER / CREATOR INFO** 👑\n\n"
+            "🔥 **Creator:** Tyagi Ji\n"
+            f"📩 **Direct Contact:** {OWNER_USERNAME}"
         )
         back_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Main Menu", callback_data="btn_menu")]])
         await query.edit_message_text(text=text, reply_markup=back_markup, parse_mode="Markdown")
 
     elif query.data == "btn_menu":
-        welcome_text = "👑 **MAIN MENU** 👑\n\nNeeche option chunein ya direct sawal poochein:"
+        welcome_text = "👑 **MAIN MENU**\n\nNeeche option chunein ya direct sawal poochein:"
         await query.edit_message_text(text=welcome_text, reply_markup=get_main_menu(), parse_mode="Markdown")
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_prompt = update.message.text.strip()
+    user_prompt_lower = user_prompt.lower()
 
-    creator_keywords = ["kisne banaya", "who made", "creator", "developer", "kiska bot hai", "owner", "banaya kisne"]
-    if any(k in user_prompt.lower() for k in creator_keywords):
-        await update.message.reply_text("👑 TYAGI JI MADE THIS BOT")
+    # Creator sawal ka answer
+    creator_keywords = ["kisne banaya", "who made", "creator", "developer", "kiska bot hai", "banaya kisne", "owner kaun hai"]
+    if any(k in user_prompt_lower for k in creator_keywords):
+        await update.message.reply_text("Mujhe Tyagi Ji ne banaya hai.")
         return
 
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
@@ -130,7 +128,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = await loop.run_in_executor(
             None,
             lambda: ai_client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.8-flash",
                 contents=user_prompt,
                 config=types.GenerateContentConfig(
                     system_instruction=SYSTEM_PROMPT,
@@ -138,9 +136,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             )
         )
-        reply_text = response.text or "Maaf kijiye, mujhe koi uttar nahi mila."
+        reply_text = response.text or "Maaf kijiye, koi uttar nahi mila."
         
-        # 4096 character limit safe handling
         if len(reply_text) > 4000:
             for i in range(0, len(reply_text), 4000):
                 await update.message.reply_text(reply_text[i:i+4000])
@@ -166,10 +163,10 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = await loop.run_in_executor(
             None,
             lambda: ai_client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.8-flash",
                 contents=[
                     types.Part.from_bytes(data=audio_bytes, mime_type="audio/ogg"),
-                    "Is audio ka jawab dein. Agar creator ya developer ke bare me ho to strictly 'TYAGI JI MADE THIS BOT' bolna. Kisi company ka naam mat lena."
+                    "Is audio ka clear jawab do. Agar creator pucha ho to bolna 'Mujhe Tyagi Ji ne banaya hai'. Kisi company ka naam mat lena."
                 ],
                 config=types.GenerateContentConfig(
                     system_instruction=SYSTEM_PROMPT,
@@ -178,7 +175,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         )
 
-        reply_text = response.text or "Main aapki voice theek se samajh nahi paya."
+        reply_text = response.text or "Main aapki voice samajh nahi paya."
 
         def make_tts():
             tts = gTTS(text=reply_text[:500], lang="hi")
@@ -233,7 +230,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = await loop.run_in_executor(
             None,
             lambda: ai_client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.8-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
             )
@@ -264,8 +261,9 @@ def main():
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
 
-    print("Tyagi Ji Bot start ho gaya hai...")
+    print("AI Bot successfully started...")
     app.run_polling()
 
 if __name__ == "__main__":
     main()
+    
