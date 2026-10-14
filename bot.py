@@ -1,5 +1,4 @@
 import os
-import io
 import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -10,52 +9,47 @@ from telegram.ext import (
     filters,
     ContextTypes,
 )
-from google import genai
-from google.genai import types
+from groq import Groq
 from gtts import gTTS
 import pypdf
 
 # Credentials
 TELEGRAM_BOT_TOKEN = "8831762730:AAFEv30ajJt9U81vmBx3BvKW5vS6STdaPOM"
-GEMINI_API_KEY = "AQ.Ab8RN6J89WI3ArFpLvh7CZXUCoj0sHRWRxSkaXhQ1X8rcfNOzA"
-ADMIN_ID = 8501811067
+GROQ_API_KEY = "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"
 OWNER_USERNAME = "@Tyagizbg"
 
-# AI Client
-ai_client = genai.Client(api_key=GEMINI_API_KEY)
+# Initialize Groq Client
+groq_client = Groq(api_key=GROQ_API_KEY)
 
 # System Prompt
 SYSTEM_PROMPT = (
     "Aap ek advanced aur smart AI assistant hain jise Tyagi Ji ne banaya hai. "
-    "KABHI BHI kisi bhi haalat me 'Google', 'Gemini', 'LLM' ya kisi company ka naam mat lena. "
+    "KABHI BHI kisi bhi haalat me kisi company ya platform ka naam mat lena. "
     "Agar koi pooche ki 'bot kisne banaya', 'creator kaun hai', 'developer kaun hai', 'who made you' ya 'kiska bot hai', "
-    "to aapka seedha jawab hona chahiye: 'Mujhe Tyagi Ji ne banaya hai'. "
+    "to aapka seedha aur saaf jawab hona chahiye: 'Mujhe Tyagi Ji ne banaya hai'. "
     "Baaki sabhi sawalon ke jawab clear, accurate, polite aur helpful bhasha me dein."
 )
 
 def get_main_menu():
     keyboard = [
         [
-            InlineKeyboardButton("🔍 Live Web Search", callback_data="btn_search"),
             InlineKeyboardButton("📖 Help Guide", callback_data="btn_help"),
+            InlineKeyboardButton("📄 PDF Summarizer", callback_data="btn_pdf"),
         ],
         [
-            InlineKeyboardButton("📄 PDF Summarizer", callback_data="btn_pdf"),
             InlineKeyboardButton("👑 Owner Info", callback_data="btn_owner"),
         ],
     ]
     return InlineKeyboardMarkup(keyboard)
 
-# Dynamic User Name Greeting
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.first_name or "Dost"
     welcome_text = (
         f"👑 **NAMASTE {user_name.upper()}!** 👑\n\n"
         "✨ Main hoon aapka personal **Advanced AI Assistant**.\n"
-        "⚡ Mujhse aap koi bhi sawal pooch sakte hain, live khabrein jaan sakte hain, "
-        "voice me baat kar sakte hain ya documents summarize karwa sakte hain.\n\n"
+        "⚡ Mujhse aap koi bhi sawal pooch sakte hain, voice me baat kar sakte hain ya documents summarize karwa sakte hain.\n\n"
         "━━━━━━━━━━━━━━━━━━━━━\n"
-        "👇 **Neeche diye gaye buttons se shuru karein:**"
+        "👇 **Neeche diye gaye buttons se shuru karein ya direct message bhejein:**"
     )
     await update.message.reply_text(
         text=welcome_text,
@@ -67,24 +61,13 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    if query.data == "btn_search":
-        text = (
-            "🔍 **LIVE WEB SEARCH MODE** 🌐\n\n"
-            "• Main real-time internet se live information nikaal sakta hoon.\n"
-            "• **Jaise:** Live match score, taaza khabrein, weather, ya latest updates.\n\n"
-            "👉 Bas chat me apna sawal type karein!"
-        )
-        back_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Main Menu", callback_data="btn_menu")]])
-        await query.edit_message_text(text=text, reply_markup=back_markup, parse_mode="Markdown")
-
-    elif query.data == "btn_help":
+    if query.data == "btn_help":
         text = (
             "📖 **HELP & FEATURES GUIDE** 🛠️\n\n"
-            "🔹 **🔍 Live Web Search:** Real-time internet search support karta hai.\n"
-            "🔹 **🎙️ Voice Assistant:** Audio bhejoge toh bol kar reply milega.\n"
-            "🔹 **📄 PDF Summarizer:** PDF upload karne par main points bata dega.\n"
-            "🔹 **👑 Owner Info:** Creator contact info.\n"
-            "🔹 **💬 Chat:** Normal sawal-jawab aur solutions."
+            "🔹 **💬 Chat:** Normal sawal poochein, instant jawab milega.\n"
+            "🔹 **🎙️ Voice Assistant:** Voice note bhejein, bol kar jawab aayega.\n"
+            "🔹 **📄 PDF Summarizer:** PDF bhejein, bot point-to-point summary bana dega.\n"
+            "🔹 **👑 Owner Info:** Creator Tyagi Ji ki contact details.\n"
         )
         back_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Main Menu", callback_data="btn_menu")]])
         await query.edit_message_text(text=text, reply_markup=back_markup, parse_mode="Markdown")
@@ -92,8 +75,9 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "btn_pdf":
         text = (
             "📄 **DOCUMENT / PDF SUMMARIZER** 📚\n\n"
-            "• Koi bhi PDF document ke roop me chat me bhejein.\n"
-            "• Bot use padh kar short points me summary de dega."
+            "• Koi bhi PDF document chat me send karein.\n"
+            "• Bot use padh kar clean bullet points me summary de dega.\n\n"
+            "👉 Abhi ek PDF send karke test karein!"
         )
         back_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Main Menu", callback_data="btn_menu")]])
         await query.edit_message_text(text=text, reply_markup=back_markup, parse_mode="Markdown")
@@ -111,11 +95,20 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         welcome_text = "👑 **MAIN MENU**\n\nNeeche option chunein ya direct sawal poochein:"
         await query.edit_message_text(text=welcome_text, reply_markup=get_main_menu(), parse_mode="Markdown")
 
+def call_groq(prompt_text):
+    chat_completion = groq_client.chat.completions.create(
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt_text}
+        ],
+        model="llama-3.3-70b-versatile",
+    )
+    return chat_completion.choices[0].message.content
+
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_prompt = update.message.text.strip()
     user_prompt_lower = user_prompt.lower()
 
-    # Creator sawal ka answer
     creator_keywords = ["kisne banaya", "who made", "creator", "developer", "kiska bot hai", "banaya kisne", "owner kaun hai"]
     if any(k in user_prompt_lower for k in creator_keywords):
         await update.message.reply_text("Mujhe Tyagi Ji ne banaya hai.")
@@ -125,18 +118,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         loop = asyncio.get_running_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: ai_client.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_PROMPT,
-                    tools=[types.Tool(google_search=types.GoogleSearch())]
-                )
-            )
-        )
-        reply_text = response.text or "Maaf kijiye, koi uttar nahi mila."
+        reply_text = await loop.run_in_executor(None, call_groq, user_prompt)
         
         if len(reply_text) > 4000:
             for i in range(0, len(reply_text), 4000):
@@ -156,26 +138,21 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         voice = await update.message.voice.get_file()
         await voice.download_to_drive(voice_in)
 
-        with open(voice_in, "rb") as f:
-            audio_bytes = f.read()
-
         loop = asyncio.get_running_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: ai_client.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=[
-                    types.Part.from_bytes(data=audio_bytes, mime_type="audio/ogg"),
-                    "Is audio ka clear jawab do. Agar creator pucha ho to bolna 'Mujhe Tyagi Ji ne banaya hai'. Kisi company ka naam mat lena."
-                ],
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_PROMPT,
-                    tools=[types.Tool(google_search=types.GoogleSearch())]
-                )
-            )
-        )
+        def transcribe():
+            with open(voice_in, "rb") as file:
+                return groq_client.audio.transcriptions.create(
+                    file=(voice_in, file.read()),
+                    model="whisper-large-v3",
+                ).text
 
-        reply_text = response.text or "Main aapki voice samajh nahi paya."
+        transcribed_text = await loop.run_in_executor(None, transcribe)
+
+        creator_keywords = ["kisne banaya", "who made", "creator", "developer", "kiska bot hai"]
+        if any(k in transcribed_text.lower() for k in creator_keywords):
+            reply_text = "Mujhe Tyagi Ji ne banaya hai."
+        else:
+            reply_text = await loop.run_in_executor(None, call_groq, transcribed_text)
 
         def make_tts():
             tts = gTTS(text=reply_text[:500], lang="hi")
@@ -212,7 +189,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         reader = pypdf.PdfReader(pdf_path)
         extracted_text = ""
-        for page in reader.pages[:15]:
+        for page in reader.pages[:20]:
             text = page.extract_text()
             if text:
                 extracted_text += text + "\n"
@@ -222,21 +199,14 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         prompt = (
-            "Neeche diye gaye document ko clean bullet points me summarize karo:\n\n"
-            + extracted_text[:10000]
+            "Neeche diye gaye document ko clean bullet points me Hindi/Hinglish me summarize karo:\n\n"
+            + extracted_text[:12000]
         )
 
         loop = asyncio.get_running_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: ai_client.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
-            )
-        )
+        summary = await loop.run_in_executor(None, call_groq, prompt)
 
-        summary_text = f"📄 **DOCUMENT SUMMARY:**\n\n{response.text}"
+        summary_text = f"📄 **DOCUMENT SUMMARY:**\n\n{summary}"
         if len(summary_text) > 4000:
             for i in range(0, len(summary_text), 4000):
                 await update.message.reply_text(summary_text[i:i+4000])
@@ -261,7 +231,7 @@ def main():
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
 
-    print("AI Bot successfully started...")
+    print("AI Bot with Groq successfully started...")
     app.run_polling()
 
 if __name__ == "__main__":
